@@ -4,6 +4,42 @@ import { Bot, User } from 'lucide-react';
 const MessageBubble = ({ message }) => {
     const isUser = message.role === 'user';
 
+    const formatMessage = (text) => {
+        if (!text) return null;
+
+        // Split text into lines to handle bullet points and blocks
+        const lines = text.split('\n');
+
+        return lines.map((line, index) => {
+            let processedLine = line;
+
+            // Handle bullet points: "* " at the start of a line
+            const isBullet = processedLine.trim().startsWith('* ');
+            if (isBullet) {
+                processedLine = processedLine.replace(/^\s*\*\s+/, '');
+            }
+
+            // Handle bold: **text**
+            const parts = processedLine.split(/(\*\*.*?\*\*)/g);
+            const content = parts.map((part, i) => {
+                if (part.startsWith('**') && part.endsWith('**')) {
+                    return <strong key={i}>{part.slice(2, -2)}</strong>;
+                }
+                return part;
+            });
+
+            return (
+                <div key={index} style={{
+                    display: isBullet ? 'list-item' : 'block',
+                    marginLeft: isBullet ? '1.5rem' : '0',
+                    marginBottom: index === lines.length - 1 ? '0' : '0.5rem'
+                }}>
+                    {content}
+                </div>
+            );
+        });
+    };
+
     return (
         <div style={{
             display: 'flex',
@@ -24,17 +60,17 @@ const MessageBubble = ({ message }) => {
             <div style={{
                 maxWidth: '80%',
                 padding: '1rem',
-                borderRadius: '20px', // More rounded
+                borderRadius: '20px',
                 borderTopRightRadius: isUser ? '4px' : '20px',
                 borderTopLeftRadius: !isUser ? '4px' : '20px',
-                background: isUser ? '#000000' : '#ffffff', // User: Black, AI: White
+                background: isUser ? '#000000' : '#ffffff',
                 border: !isUser ? '1px solid rgba(0,0,0,0.05)' : 'none',
                 lineHeight: '1.6',
-                whiteSpace: 'pre-wrap', // Preserve formatting
+                whiteSpace: 'pre-wrap',
                 color: isUser ? '#ffffff' : '#1d1d1f',
                 boxShadow: isUser ? '0 2px 4px rgba(0,0,0,0.1)' : '0 2px 8px rgba(0,0,0,0.04)'
             }}>
-                {message.text}
+                {formatMessage(message.text)}
             </div>
         </div>
     );
