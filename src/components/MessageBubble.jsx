@@ -24,14 +24,15 @@ const MessageBubble = ({ message }) => {
             <div style={{
                 maxWidth: '80%',
                 padding: '1rem',
-                borderRadius: '12px',
-                borderTopRightRadius: isUser ? '4px' : '12px',
-                borderTopLeftRadius: !isUser ? '4px' : '12px',
-                background: isUser ? 'rgba(255, 140, 66, 0.15)' : 'rgba(96, 165, 250, 0.15)',
-                border: `1px solid ${isUser ? 'rgba(255, 140, 66, 0.3)' : 'rgba(96, 165, 250, 0.3)'}`,
+                borderRadius: '20px', // More rounded
+                borderTopRightRadius: isUser ? '4px' : '20px',
+                borderTopLeftRadius: !isUser ? '4px' : '20px',
+                background: isUser ? '#000000' : '#ffffff', // User: Black, AI: White
+                border: !isUser ? '1px solid rgba(0,0,0,0.05)' : 'none',
                 lineHeight: '1.6',
                 whiteSpace: 'pre-wrap', // Preserve formatting
-                color: 'var(--text-primary)'
+                color: isUser ? '#ffffff' : '#1d1d1f',
+                boxShadow: isUser ? '0 2px 4px rgba(0,0,0,0.1)' : '0 2px 8px rgba(0,0,0,0.04)'
             }}>
                 {message.text}
             </div>

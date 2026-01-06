@@ -17,15 +17,15 @@ const ApiKeyModal = ({ onSave }) => {
 
   return (
     <div className="modal-overlay" style={{
-      position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.8)',
+      position: 'fixed', inset: 0, background: 'rgba(0, 0, 0, 0.4)', // Neutral dim
       backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center',
       justifyContent: 'center', zIndex: 1000
     }}>
       <div className="glass-panel" style={{ padding: '2rem', width: '100%', maxWidth: '400px' }}>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '1.5rem' }}>
           <div style={{
-            background: 'rgba(59, 130, 246, 0.1)', padding: '1rem', borderRadius: '50%',
-            marginBottom: '1rem', color: 'var(--accent-primary)'
+            background: 'rgba(0, 0, 0, 0.05)', padding: '1rem', borderRadius: '50%',
+            marginBottom: '1rem', color: '#000000'
           }}>
             <Key size={32} />
           </div>

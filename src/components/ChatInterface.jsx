@@ -19,17 +19,20 @@ const ChatInterface = ({ messages, onSendMessage, isLoading }) => {
         }}>
             {/* Header */}
             <header style={{
-                padding: '1rem', borderBottom: '1px solid var(--border-color)',
-                background: 'rgba(15, 23, 42, 0.8)', backdropFilter: 'blur(10px)',
-                position: 'sticky', top: 0, zIndex: 10
+                padding: '1.25rem',
+                background: 'rgba(255, 255, 255, 0.85)',
+                backdropFilter: 'blur(20px)',
+                position: 'sticky', top: 0, zIndex: 10,
+                boxShadow: '0 1px 0px rgba(0,0,0,0.05)' // Subtle separator
             }}>
                 <h1 style={{
-                    fontSize: '1.25rem', fontWeight: 'bold',
-                    background: 'linear-gradient(to right, var(--accent-primary), var(--accent-secondary))',
-                    WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-                    display: 'inline-block'
+                    fontSize: '1.25rem', fontWeight: '700',
+                    color: '#000000',
+                    letterSpacing: '-0.01em',
+                    margin: 0,
+                    display: 'flex', alignItems: 'center', gap: '0.5rem'
                 }}>
-                    Senyum Chat
+                    <span style={{ fontSize: '1.5rem' }}>😊</span> Senyum Chat
                 </h1>
             </header>
 
