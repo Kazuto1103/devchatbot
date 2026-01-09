@@ -98,6 +98,16 @@ def get_chat_context():
             ORDER BY nama_fasilitas
         """)
         context['fasilitas'] = cursor.fetchall()
+
+        cursor.execute("""
+            SELECT 
+                keyword,
+                keterangan,
+                response
+            FROM pelayanan_publik
+            ORDER BY keyword
+        """)
+        context['pelayanan_publik'] = cursor.fetchall()
         
     except mysql.connector.Error as err:
         print(f"Error fetching data: {err}")
@@ -170,12 +180,20 @@ async def chat(request: ChatRequest):
     fasilitas_List = []
     for f in context['fasilitas']:
         telp = f['telp'] if f['telp'] else ''
-        fasilitas_str = f"{f['nama_fasilitas']}|{f['alamat']}|{f['kelurahan']}|{f['kecamatan']}"
+        fasilitas_str = f"{f['nama_fasilitas']}|{f['alamat']}|{f['kelurahan']}|{f['kecamatan']}|{f['email']}|{f['website']}"
         if telp:
             fasilitas_str += f"|{telp}"
         fasilitas_List.append(fasilitas_str)
         
     fasilitas_context = "\n".join(fasilitas_List)
+
+    pelayanan_publik_List = []
+    for f in context['pelayanan_publik']:
+        # Format: Keyword, Keterangan, and Response (containing HTML/details)
+        pelayanan_publik_str = f"Keyword: {f['keyword']}\nKeterangan: {f['keterangan']}\nDetail: {f['response']}\n"
+        pelayanan_publik_List.append(pelayanan_publik_str)
+
+    pelayanan_publik_context = "\n---\n".join(pelayanan_publik_List)
 
     system_instruction = f"""Anda adalah perwakilan ramah dan pemandu lokal Kota Pangkal Pinang. 
 Tujuan Anda adalah membantu warga dan pengunjung dengan informasi yang akurat namun disampaikan secara natural, layaknya berbicara dengan manusia, bukan robot.
@@ -188,6 +206,9 @@ DATA REFERENSI:
 === FASILITAS & LOKASI DI PANGKAL PINANG ===
 Data berikut berisi daftar Fasilitas (Fformat: Nama|Alamat|Kelurahan|Kecamatan|Telp):
 {fasilitas_context}
+
+=== PELAYANAN PUBLIK ===
+{pelayanan_publik_context}
 
 PRINSIP KOMUNIKASI (SANGAT PENTING):
 1. **Dilarang Keras** menggunakan kalimat seperti "Berdasarkan data yang saya miliki", "Menurut informasi saya", atau "Dalam database kami". 
@@ -224,7 +245,7 @@ Ingat: Anda adalah pemandu kota yang cerdas dan ramah, bukan sekadar mesin penca
                     contents=chat_history,
                     config=types.GenerateContentConfig(
                         system_instruction=system_instruction,
-                        max_output_tokens=1000
+                        max_output_tokens=50
                     )
                 )
                 for chunk in response:
