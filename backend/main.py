@@ -195,31 +195,103 @@ async def chat(request: ChatRequest):
 
     pelayanan_publik_context = "\n---\n".join(pelayanan_publik_List)
 
-    system_instruction = f"""Anda adalah perwakilan ramah dan pemandu lokal Kota Pangkal Pinang. 
-Tujuan Anda adalah membantu warga dan pengunjung dengan informasi yang akurat namun disampaikan secara natural, layaknya berbicara dengan manusia, bukan robot.
+    # Determine response type and set token limits
+    question = message.lower()
+    
+    # Default values
+    max_tokens = 300  # Increased default token limit
+    response_style = ""
+    min_tokens = 20   # Ensure minimum response length
+    
+    # Analyze question type and adjust response parameters
+    if any(word in question for word in ['di mana', 'lokasi', 'alamat', 'dimana']):
+        response_style = """
+        WAJIB ikuti format berikut:
+        [NAMA TEMPAT]
+        Alamat: [alamat lengkap]
+        Kecamatan: [nama kecamatan]
+        Koordinat: [jika tersedia]
+        Telp: [jika tersedia]
+        
+        Jika tidak menemukan lokasi yang tepat, berikan lokasi terdekat yang relevan."""
+        max_tokens = 200
+        min_tokens = 30
+        
+    elif any(word in question for word in ['jam buka', 'jam operasional', 'buka jam', 'tutup jam']):
+        response_style = """
+        WAJIB ikuti format:
+        [NAMA TEMPAT]
+        Jam Operasional: [hari] [waktu buka] - [waktu tutup] WIB
+        Contoh: Senin-Jumat 08.00-16.00 WIB
+        
+        Jika tidak tahu jam operasional, beri tahu dengan jujur."""
+        max_tokens = 150
+        min_tokens = 20
+        
+    elif any(word in question for word in ['syarat', 'persyaratan', 'dokumen']):
+        response_style = """
+        Daftar persyaratan yang LENGKAP:
+        1. [Persyaratan 1]
+           - Keterangan tambahan
+        2. [Persyaratan 2]
+        
+        Pastikan mencantumkan:
+        - Jumlah rangkap dokumen
+        - Dokumen asli/fotokopi
+        - Masa berlaku dokumen (jika ada)"""
+        max_tokens = 400
+        min_tokens = 50
+        
+    elif any(word in question for word in ['cara', 'prosedur', 'tahapan']):
+        response_style = """
+        Langkah-langkah lengkap:
+        1. [Langkah 1]
+           - Detail penting
+        2. [Langkah 2]
+        
+        Informasi tambahan:
+        - Waktu penyelesaian: [estimasi]
+        - Biaya: [jika ada]
+        - Lokasi: [tempat pengurusan]"""
+        max_tokens = 500
+        min_tokens = 60
+        
+    else:
+        response_style = """
+        Berikan jawaban yang:
+        - Langsung ke inti permasalahan
+        - Maksimal 3-4 kalimat
+        - Jelas dan mudah dipahami
+        - Jika tidak tahu, sarankan kontak yang bisa dihubungi"""
+        max_tokens = 200
+        min_tokens = 15
+
+    system_instruction = f"""ANDA ADALAH ASISTEN RESMI PEMERINTAH KOTA PANGKAL PINANG
+
+PERINTAH PENTING:
+1. WAJIB menjawab dengan format yang diminta
+2. JANGAN mengulang pertanyaan dalam jawaban
+3. Gunakan BAHASA INDONESIA yang baik dan benar
+4. Jika informasi tidak lengkap, beri tahu dengan jujur
+5. JANGAN membuat informasi yang tidak ada dalam data
+
+{response_style}
 
 DATA REFERENSI:
 
-=== FAQ & INFORMASI UMUM ===
+=== INFORMASI UMUM ===
 {faq_context}
 
-=== FASILITAS & LOKASI DI PANGKAL PINANG ===
-Data berikut berisi daftar Fasilitas (Fformat: Nama|Alamat|Kelurahan|Kecamatan|Telp):
+=== FASILITAS ===
 {fasilitas_context}
 
-=== PELAYANAN PUBLIK ===
+=== LAYANAN PUBLIK ===
 {pelayanan_publik_context}
 
-PRINSIP KOMUNIKASI (SANGAT PENTING):
-1. **Dilarang Keras** menggunakan kalimat seperti "Berdasarkan data yang saya miliki", "Menurut informasi saya", atau "Dalam database kami". 
-2. Jawablah langsung secara natural. Contoh: Jika ditanya "Apakah Kampak ada di Pangkal Pinang?", jawab "Ya, Kampak itu ada di Pangkal Pinang. Itu adalah nama daerah/jalan yang masuk wilayah Kecamatan Gerunggang."
-3. Jika informasi ditemukan di data fasilitas, sampaikan lokasinya dengan akrab. 
-4. Jika Anda tidak menemukan data spesifik yang dicari, tetaplah membantu. Jangan langsung menolak. Coba arahkan dengan ramah ke layanan resmi Pemerintah Kota Pangkal Pinang.
-5. Gunakan nada bicara yang HANGAT, SOLUTIF, dan PROFESIONAL.
-6. Anda adalah wajah dari Kota Pangkal Pinang. Buatlah orang merasa terbantu dan nyaman.
-7. Selalu gunakan Bahasa Indonesia yang santun namun tetap komunikatif.
-
-Ingat: Anda adalah pemandu kota yang cerdas dan ramah, bukan sekadar mesin pencari data."""
+FORMAT STANDAR:
+- Tanggal: DD/MM/YYYY
+- Waktu: 24 jam (contoh: 14.00 WIB)
+- Nomor telepon: +62 [kode area] [nomor]"""
 
     try:
         client = genai.Client(api_key=server_gemini_key)
@@ -237,20 +309,34 @@ Ingat: Anda adalah pemandu kota yang cerdas dan ramah, bukan sekadar mesin penca
             parts=[types.Part(text=message)]
         ))
 
+        # Common config for both streaming and non-streaming
+        generation_config = {
+            'model': 'gemini-2.5-flash',
+            'contents': chat_history,
+            'config': types.GenerateContentConfig(
+                system_instruction=system_instruction,
+                max_output_tokens=1024,  # Increased max tokens
+                temperature=0.7,         # Slightly higher for more natural responses
+                top_p=0.9,
+                top_k=40,
+                stop_sequences=['\n\n']  # Stop at double newlines
+            )
+        }
+
         # STREAMING LOGIC
         if stream:
             async def response_generator():
-                response = client.models.generate_content_stream(
-                    model='gemini-2.5-flash',
-                    contents=chat_history,
-                    config=types.GenerateContentConfig(
-                        system_instruction=system_instruction,
-                        max_output_tokens=50
-                    )
-                )
+                full_response = ""
+                response = client.models.generate_content_stream(**generation_config)
+                
                 for chunk in response:
                     if chunk.text:
+                        full_response += chunk.text
                         yield chunk.text
+                
+                # If response was cut off, add ellipsis
+                if full_response and not full_response.strip().endswith(('.', '!', '?')):
+                    yield '...'
 
             return StreamingResponse(
                 response_generator(), 
@@ -259,15 +345,14 @@ Ingat: Anda adalah pemandu kota yang cerdas dan ramah, bukan sekadar mesin penca
         
         # STANDARD LOGIC
         else:
-            response = client.models.generate_content(
-                model='gemini-2.5-flash',
-                contents=chat_history,
-                config=types.GenerateContentConfig(
-                    system_instruction=system_instruction,
-                    max_output_tokens=1000
-                )
-            )
-            return {'text': response.text}
+            response = client.models.generate_content(**generation_config)
+            response_text = response.text.strip()
+            
+            # Ensure response ends with proper punctuation
+            if response_text and not response_text.endswith(('.', '!', '?')):
+                response_text += '...'
+                
+            return {'text': response_text}
         
     except Exception as e:
         print(f"AI Error: {e}")
