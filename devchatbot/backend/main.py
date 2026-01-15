@@ -14,9 +14,7 @@ from typing import List, Optional, Dict, Any
 
 from pathlib import Path
 
-# Define Base Dir (Resolved to Project Root)
-# main.py is in devchatbot/backend/ (2 levels deep from root if we consider devchatbot2 as root context, 
-# but actually: devchatbot2/devchatbot/backend/main.py -> parent -> backend, parent -> devchatbot, parent -> devchatbot2)
+
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 ENV_PATH = BASE_DIR / '.env'
 
@@ -274,12 +272,8 @@ PRINSIP KOMUNIKASI (SANGAT PENTING):
 5. Gunakan nada bicara yang HANGAT, SOLUTIF, dan PROFESIONAL.
 6. Anda adalah wajah dari Kota Pangkal Pinang. Buatlah orang merasa terbantu dan nyaman.
 7. Selalu gunakan Bahasa Indonesia yang santun namun tetap komunikatif.
-8. **PENTING - BATAS TOKEN**: Anda memiliki kuota kata yang sangat terbatas. **JAWABLAH DENGAN SINGKAT DAN PADAT**.
-9. Jika pengguna meminta daftar/list yang hasilnya banyak:
-   - HANYA sebutkan **3-5 item** random saja.
-   - Jangan berikan deskripsi panjang lebar untuk setiap item.
-   - Akhiri list dengan kalimat "...dan masih banyak lagi."
-   - Prioritaskan agar jawaban Anda **tidak terpotong**. Lebih baik jawaban pendek tapi utuh daripada panjang tapi terpotong.
+8. **KHUSUS PERTANYAAN PELAYANAN PUBLIK**: Jika pengguna bertanya tentang keyword yang ada di "PELAYANAN PUBLIK", Anda WAJIB menyampaikan isi bagian "Detail" secara LENGKAP dan UTUH sesuai data. Jangan diringkas/disimpulkan jika itu menyangkut persyaratan atau prosedur.
+9. Jika pengguna meminta daftar/list yang hasilnya banyak (misal daftar tempat), baru Anda berikan jawaban singkat (3-5 item).
 10. Ingat: Anda adalah pemandu kota yang cerdas dan ramah, bukan sekadar mesin pencari data."""
 
     try:
@@ -306,7 +300,7 @@ PRINSIP KOMUNIKASI (SANGAT PENTING):
                     contents=chat_history,
                     config=types.GenerateContentConfig(
                         system_instruction=system_instruction,
-                        max_output_tokens=500
+                        max_output_tokens=650
                     )
                 )
                 for chunk in response:
@@ -325,7 +319,7 @@ PRINSIP KOMUNIKASI (SANGAT PENTING):
                 contents=chat_history,
                 config=types.GenerateContentConfig(
                     system_instruction=system_instruction,
-                    max_output_tokens=500
+                    max_output_tokens=650
                 )
             )
             return {'text': response.text}
